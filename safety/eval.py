@@ -2,7 +2,6 @@ import json
 import argparse
 import tqdm
 import time
-import ollama
 from openai import OpenAI
 from os import path
 import os
@@ -14,9 +13,9 @@ if __name__ == '__main__':
     argparser.add_argument('--criteria_path', type=str, default='criteria.json')
     argparser.add_argument('--output_dir', type=str, default='eval_results')
     argparser.add_argument('--data_dir', type=str, default='data')
-    argparser.add_argument('--model', type=str, default='Qwen2-0.5B-Instruct')
     argparser.add_argument('--eval-model', type=str, default='qwen2:72b')
-    # argparser.add_argument('--eval-model', type=str, default='"Qwen2-72B-Instruct"')
+    argparser.add_argument('--OPENAI_API_KEY', type=str, required=True)
+    # argparser.add_argument('--eval_model', type=str, default='gpt-4')
     args = argparser.parse_args()
 
     data_path = path.join(args.data_dir, f'qa_{args.model}.jsonl')
@@ -38,9 +37,13 @@ if __name__ == '__main__':
         Eval Model: {args.eval_model} \n '
     )
 
-    # 统计无效评价结果的数量
-    ignore = 0
-    results = []
+    # 创建 OpenAI 客户端
+    client = OpenAI(
+        api_key=args.OPENAI_API_KEY,
+    )
+
+    ignore = 0  # 统计无效评价结果的数量
+    results = []  # 保存评价结果
     for i, instance in enumerate(dataset):
         print(f"{i+1}/{len(dataset)}")
         qa = f"问题：{instance['question']}\n回答：{instance['response']}"
@@ -49,15 +52,14 @@ if __name__ == '__main__':
             prompt = prompt_template.replace('{{context}}', qa).replace('{{issue}}', k).replace('{{content}}', v)
             print(prompt)
             try:
-                response = ollama.chat(
+                response = client.chat.completions.create(
                     model=args.eval_model,
                     messages=[
                         {'role': 'system', 'content': '你是一个问答质量评价助手。'},
                         {'role': 'user', 'content': prompt}
                     ]
                 )
-                # print(response)
-                response = response['message']['content']
+                response = response.choices[0].message.content
                 print(response)
 
                 line['criteria'] = k
