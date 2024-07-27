@@ -4,9 +4,10 @@ A concise script prompting GPT-4 to evaluate the large language models' safety.
 ## Generation
 ```
 python generate.py \
-  --data_path prompt_template.txt \
+  --data_path data/seval.jsonl \
   --model_path <model_path> \
-  --output_path <output_path>
+  --batch_dize <batch_dize> \
+  --out_file <output_path>
 ```
 
 ## Evaluation
